@@ -1,0 +1,31 @@
+name: Build image
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write          # allows pushing to ghcr.io
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm   # ARM machine: same CPU type as the k3d cluster on the M5 Mac
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/zafaruralov/zafarr-backend:${{ github.sha }}
+            ghcr.io/zafaruralov/zafarr-backend:latest
