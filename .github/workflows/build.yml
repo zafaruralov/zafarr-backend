@@ -29,3 +29,21 @@ jobs:
           tags: |
             ghcr.io/zafaruralov/zafarr-backend:${{ github.sha }}
             ghcr.io/zafaruralov/zafarr-backend:latest
+
+  # After the image exists: write its tag into zafarr-infra. ArgoCD sees that commit and deploys it.
+  bump-infra:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: zafaruralov/zafarr-infra
+          token: ${{ secrets.INFRA_TOKEN }}   # permission to push to the infra repo
+
+      - name: Update image tag
+        run: |
+          sed -i "s|ghcr.io/zafaruralov/zafarr-backend:.*|ghcr.io/zafaruralov/zafarr-backend:${{ github.sha }}|" apps/backend/deployment.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "backend: deploy ${GITHUB_SHA::7}"
+          git push
